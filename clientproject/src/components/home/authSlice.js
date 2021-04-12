@@ -1,84 +1,45 @@
 import { createSlice } from '@reduxjs/toolkit';
 import axios from 'axios';
+let baseUrl = "http://127.0.0.1:3000";
 
-//let baseUrl = "http://127.0.0.1:3000";
-let baseUrl = "";
 
 export const slice = createSlice({
   name: 'authReducer',
   initialState: {
     loading : false,
-    hasError : false,
-    players :  { url1:'', url2:'' },
-    gender: 'g',
-    top: [],
-    hits: 'loading hits...'
-  },
-  reducers: {
-      reload : (state, action) => {
-        state.players = action.payload ; 
-      },
-      toggleGender : (state)=> {
-          if(state.gender==='g') state.gender='b';
-          else                  state.gender='g';
-      },
-      topProfiles : (state,action) => {
-        state.top = action.payload;
-      },
-      loadHits : (state,action)=> {
-          state.hits = action.payload ;
-      }
+    userName: '',
+    password: '',
+    authCounter: 0
+  }, 
+  reducers: { // state change - state write
+    loginUserName : (state, action) => {
+      state.userName = action.payload ; 
+    },
+    increaseCount : (state,action)=> {
+      state.authCounter = state.authCounter + action.payload ;
+    },
+    decreaseCount : (state,action)=> {
+      state.authCounter = state.authCounter - action.payload ;
+    }
   },
 });
 
-export const { load,reload,toggleGender,topProfiles,loadHits } = slice.actions;
+export const { loginUserName,increaseCount,decreaseCount } = slice.actions;
 
-// The function below is called a thunk and allows us to perform async logic. It
-// can be dispatched like a regular action: `dispatch(incrementAsync(10))`. This
-// will call the thunk with the `dispatch` function as the first argument. Async
-// code can then be executed and other actions can be dispatched
+//=====================actions for backend calls========================
 
-
-// thunk api enabled
-export const fetchPair = () => (dispatch,getState) =>  {
-    let gender = getState().match.gender ;
-    axios.get(baseUrl+'/pair/'+gender)
+// userLogin action, axios call, network call
+export const UserLogin = (data) => async dispatch =>  {
+    //console.log('calling backend with post data',data);
+    dispatch(loginUserName(data.userName));
+    try {
+      axios.post(baseUrl+'/login/',data)
       .then(response => {
-        dispatch(reload(response.data));
-    });
+        dispatch(loginUserName(response.data));
+      }) 
+    } catch (error) {
+      console.log(error,"Backend Call Failed");
+    }
  };
-
- // thunk api enabled
- export const matchPair = (data) => (dispatch,getState) =>  {
-    let gender = getState().match.gender ;
-    axios.post(baseUrl+'/match/'+gender,data)
-      .then(response => {
-        dispatch(reload(response.data));
-    })
- };
-
- export const getTopThunk = (data) => (dispatch,getState) =>  {
-    let gender = data ;
-    axios.get(baseUrl+'/top/'+gender)
-      .then(response => {
-          dispatch(topProfiles(response.data));
-    })
- };
-
- export const getHits = (data) => (dispatch,getState) =>  {
-
-    axios.get(baseUrl+'/hits/')
-      .then(response => {
-          dispatch(loadHits(response.data.hits));
-    })
- };
-
-
-
-// The function below is called a selector and allows us to select a value from
-// the state. Selectors can also be defined inline where they're used instead of
-// in the slice file. For example: `useSelector((state) => state.counter.value)`
-export const selectPair = state => state.match.players;
-
 
 export default slice.reducer;
